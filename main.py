@@ -381,23 +381,24 @@ def get_screw_position(pcb_outline, screw):
 
 def create_plate(body_o, pcb_outline, args):
     bottom_draw = []
-    screw_outline = offset_curve(pcb_outline[0], args.wall_play + args.box_screw_diameter)
+    offset = max(args.box_screw_diameter, args.wall_thickness)
+    screw_outline = offset_curve(pcb_outline[0], args.wall_play + offset)
     screw_bbox = screw_outline.bbox()
 
     # Plate
-    offset_inline_bbox = (screw_bbox[0] - args.box_screw_diameter,
-                          screw_bbox[1] + args.box_screw_diameter,
-                          screw_bbox[2] - args.box_screw_diameter,
-                          screw_bbox[3] + args.box_screw_diameter)
+    offset_inline_bbox = (screw_bbox[0] - offset,
+                          screw_bbox[1] + offset,
+                          screw_bbox[2] - offset,
+                          screw_bbox[3] + offset)
     offset_inline = bbox2path(*offset_inline_bbox,
-                              args.box_screw_diameter if args.extra_fillet > 1 else 0)
+                              offset if args.extra_fillet > 1 else 0)
     bottom_draw.append(offset_inline)
-    offset_outline_bbox = (screw_bbox[0] - (args.box_screw_diameter + args.box_wall_thickness),
-                           screw_bbox[1] + (args.box_screw_diameter + args.box_wall_thickness),
-                           screw_bbox[2] - (args.box_screw_diameter + args.box_wall_thickness),
-                           screw_bbox[3] + (args.box_screw_diameter + args.box_wall_thickness))
+    offset_outline_bbox = (screw_bbox[0] - (offset + args.box_wall_thickness),
+                           screw_bbox[1] + (offset + args.box_wall_thickness),
+                           screw_bbox[2] - (offset + args.box_wall_thickness),
+                           screw_bbox[3] + (offset + args.box_wall_thickness))
     offset_outline = bbox2path(*offset_outline_bbox,
-                               args.box_screw_diameter + args.box_wall_thickness if args.extra_fillet > 1 else 0)
+                               offset + args.box_wall_thickness if args.extra_fillet > 1 else 0)
     bottom_draw.append(offset_outline)
     result = to_wire(offset_outline, body_o)
     result = result.extrude(args.bottom, True).faces("+Z").fillet(args.box_wall_thickness)
@@ -437,7 +438,7 @@ def create_wall(body_o, pcb_outline, fingers, args):
     wall_o.edges("<Z").tag("wall_base")
     body_o = body_o.union(wall_o)
     if args.extra_fillet > 3:
-        body_o = body_o.edges(tag="wall_base").fillet(args.wall_thickness)
+        body_o = body_o.edges(tag="wall_base").fillet(args.wall_fillet)
         body_o = body_o.edges(">Z").fillet(args.wall_thickness / 3)
     return body_o
 
@@ -472,7 +473,7 @@ def create_column(body_o, path, length, fillet=0):
         body_o = body_o.edges(SolidSelector(column_o.translate((0, 0, 1)).solids().val())) \
             .fillet(fillet)
         body_o = body_o.edges(SolidSelector(column_o.translate((0, 0, -1)).solids().val())) \
-            .fillet(max(fillet_size(length), fillet))
+            .fillet(min(fillet_size(length), fillet))
     return body_o
 
 
@@ -525,16 +526,20 @@ def generate(args):
         body_o.plane = plane
         path = close_path_sanitizing(filler[0])
         path = offset_curve(path, -args.play)
-        body_o = create_column(body_o, path, args.under_space + args.pcb_thickness + args.wall_height,
+        body_o = create_column(body_o, path, args.under_space + args.pcb_thickness + args.filler_height,
                                args.filler_fillet if args.extra_fillet > 2 else 0)
 
     holes = list(filter(ShapeTypes.Hole, elements))
     for hole in holes:
         body_o.plane = plane
-        x1, x2, y1, y2 = hole[0].bbox()
-        body_o = body_o.moveTo((x1 + x2) / 2, (y1 + y2) / 2) \
-            .circle(args.pin_diameter / 2) \
-            .extrude(args.bottom, "cut", both=True)
+        if len(hole[0]) == 1:
+            x1, x2, y1, y2 = hole[0].bbox()
+            body_o = body_o.moveTo((x1 + x2) / 2, (y1 + y2) / 2) \
+                .circle(args.pin_diameter / 2) \
+                .extrude(args.bottom, "cut", both=True)
+        else:
+            path = close_path_sanitizing(hole[0])
+            body_o = to_wire(path, body_o).extrude(args.bottom, "cut", both=True)
 
     screws = list(filter(ShapeTypes.Screw, elements))
     for screw in screws:
@@ -568,11 +573,15 @@ def _main(argv=sys.argv):
 
     parser.add_argument('--wall-thickness', default=2.0, type=float,
                         help="Bench walls thickness")
+    parser.add_argument('--wall-fillet', default=2.0, type=float,
+                        help="Bench walls fillet radius")
     parser.add_argument('--wall-height', default=5.0, type=float,
                         help="Bench walls height")
     parser.add_argument('--wall-play', default=0.4, type=float,
                         help="Play between PCB and bench (X, Y) only")
 
+    parser.add_argument('--filler-height', default=5.0, type=float,
+                        help="Bench walls height")
     """
     parser.add_argument('--feet-thickness', default=2.0, type=float,
                         help="Bench feet thickness")
