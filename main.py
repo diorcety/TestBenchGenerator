@@ -35,29 +35,20 @@ def tuple_to_euclid(p):
 #
 
 
-def bbox(paths):
-    bbs = [p.bbox() for p in paths]
-    xmins, xmaxs, ymins, ymaxs = list(zip(*bbs))
-    xmin = min(xmins)
-    xmax = max(xmaxs)
-    ymin = min(ymins)
-    ymax = max(ymaxs)
-    return xmin, xmax, ymin, ymax
-
-
 def bbox2path(xmin, xmax, ymin, ymax, r=0):
     p = svgpathtools.parser.parse_path(
         svgpathtools.svg_to_paths.rect2pathd(dict(x=xmin, y=ymin, width=xmax - xmin, height=ymax - ymin, rx=r, ry=r)))
     return p
 
 
-def center_rescale(paths, scale=1.0):
-    pcb_bbox = bbox(paths)
+def center_rescale(ref, paths, scale=1.0):
+    pcb_bbox = ref[0].bbox()
     center_x = (pcb_bbox[0] + pcb_bbox[1]) / 2
     center_y = (pcb_bbox[2] + pcb_bbox[3]) / 2
 
     paths = [p.translated(-tuple_to_euclid((center_x, center_y))) for p in paths]
     paths = [p.scaled(scale) for p in paths]
+
     return paths
 
 
@@ -515,9 +506,11 @@ class ShapeTypes(object):
 
 def generate(args):
     paths, attributes = svgpathtools.svg2paths(args.svg)
-    paths = center_rescale(paths, args.scale)
     elements = list(zip(paths, attributes))
+    pcb_outline = list(filter(ShapeTypes.Outline, elements))[0]
+    paths = center_rescale(pcb_outline, paths, args.scale)
 
+    elements = list(zip(paths, attributes))
     pcb_outline = list(filter(ShapeTypes.Outline, elements))[0]
     pcb_outline = (close_path_sanitizing(pcb_outline[0]), pcb_outline[1])
 
