@@ -8,6 +8,9 @@ import svgpathtools
 
 from warnings import warn
 
+from OCP.StdFail import StdFail_NotDone
+from more_itertools import powerset
+
 logger = logging.getLogger(__name__)
 
 
@@ -357,6 +360,17 @@ def fillet_size(length):
     return length / 5
 
 
+def try_fillet(body_o, workspace, radius):
+    for x in reversed(list(powerset(range(workspace.size())))[1:]):
+        try:
+            selection = workspace.newObject([workspace.objects[i] for i in x])
+            return selection.fillet(radius)
+        except StdFail_NotDone as _:
+            pass
+    logger.exception(f"Can't create base fillet for column {workspace}")
+    return body_o
+
+
 def get_path_segments(pcb_outline, fingers):
     def get_positions(finger):
         intersections = pcb_outline[0].intersect(finger[0])
@@ -472,8 +486,8 @@ def create_column(body_o, path, length, fillet=0):
     if fillet > 0:
         body_o = body_o.edges(SolidSelector(column_o.translate((0, 0, 1)).solids().val())) \
             .fillet(fillet)
-        body_o = body_o.edges(SolidSelector(column_o.translate((0, 0, -1)).solids().val())) \
-            .fillet(min(fillet_size(length), fillet))
+        body_o = try_fillet(body_o, body_o.edges(SolidSelector(column_o.translate((0, 0, -1)).solids().val())),
+                            min(fillet_size(length), fillet))
     return body_o
 
 
@@ -654,5 +668,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-else:
-    _main(['example', 'TELEM.svg', 'TELEM.stl'])
