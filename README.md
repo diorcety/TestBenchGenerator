@@ -96,7 +96,17 @@ python box.py [options] input.svg output_file.step
 
 ---
 ### Example
-python box.py -s 1.0 my_pcb_outline.svg my_box.step
+
+```bash
+python box.py -s 1.0 box.svg box.step
+```
+
+| File Name  | Description                                                               | Image                                                                                                                        |
+|:-----------|:--------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------|
+| `box.svg`  | The 2D input outline used to generate the CAD model.                      | ![2D SVG outline used for box generator, defining the PCB perimeter](examples/box.png)                                       |
+| `box.step` | The resulting 3D model of the complete enclosure.                         | ![3D model of the complete interlocking PCB enclosure](examples/box.step.png)                                                |
+| `box.step` | Cross-section view showing the locking Z-profile and chamfered C-profile. | ![Cross-section diagram illustrating the interlocking Z-profile and C-profile junction details](examples/box.step.cross.png) |
+| `box.step` | Cross-section view showing the simple notch S-profile.                    | ![Cross-section diagram illustrating the simple notch S-profile junction detail](examples/box.step.cross2.png)               |
 
 ***
 
@@ -140,14 +150,25 @@ python bench.py [options] input.svg output_file.step
 | **Mirrored**                 | `-m`, `--mirrored`            | False      | If set, mirrors the SVG geometry along the X-axis (top-bottom flip).                             |
 
 ### Example
-python bench.py -vvvvvv -m --support-fillet 0.8 -z 1 -t 1.0 jig.svg jig.step
+```bash
+python bench.py -vvvvvv -m jig.svg jig.step
+```
 
+| File Name  | Description                                            | Image                                                                           |
+|:-----------|:-------------------------------------------------------|:--------------------------------------------------------------------------------|
+| `jig.svg`  | The 2D input outline used to generate the CAD model.   | ![2D SVG input outline for the test bench jig](examples/jig.png)                |
+| `jig.step` | The resulting 3D model of the complete test bench/jig. | ![3D STEP model of the complete test bench jig assembly](examples/jig.step.png) |
 ***
 
 ## Technical Details
 
 ### Scaling Note
-SVG editors handle units differently. The default scale (`0.264583`) assumes the SVG units are pixels at 96 DPI (common in Inkscape).
-* If your dimensions are wrong, check your SVG DPI settings or adjust the `-s` / `-z` argument.
-    * 1 px @ 96 DPI = 0.264583 mm
-    * 1 px @ 72 DPI = 0.352778 mm
+
+SVG editors (like Inkscape) and PCB CAD software exporters (like Altium's SVG output) often handle units differently, requiring a scaling factor to convert the graphic's units (usually pixels) into the working units (millimeters) required by the generator.
+
+If your dimensions are incorrect, you must **check your SVG DPI settings** (in your editor or your PCB CAD software's export options) or adjust the scale argument (`-s` or `-z`).
+
+* The default scale factor of $0.264583$ assumes the SVG uses pixels based on the 96 DPI standard (common in Inkscape and often the default for modern exports like Altium's).
+    * 1 px @ 96 DPI = $0.264583$ mm.
+* If your SVG editor or exporter uses 72 DPI (an older or different standard), the correct scale factor is $0.352778$.
+    * 1 px @ 72 DPI = $0.352778$ mm.
