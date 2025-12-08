@@ -111,35 +111,36 @@ python bench.py [options] input.svg output_file.step
 
 ### Key Arguments
 
-| Argument                     | Flag                       | Default    | Description                                                                                      |
-|:-----------------------------|:---------------------------|:-----------|:-------------------------------------------------------------------------------------------------|
-| **SVG Input**                | (Positional)               | N/A        | Path to the PCB SVG input outline file.                                                          |
-| **Output File**              | (Positional)               | N/A        | Path to the output file (e.g., `.step` or `.stl`).                                               |
-| **Log Verbosity**            | `-v`, `--verbose`          | 0          | Increases log verbosity for debugging.                                                           |
-| **PCB Thickness**            | `-t`, `--pcb-thickness`    | $1.6$      | Thickness of the PCB in mm.                                                                      |
-| **Base Plate Thickness**     | `-b`, `--bottom`           | $8.0$      | Thickness (in mm) of the main bench base plate.                                                  |
-| **Under PCB Space**          | `-u`, `--under-space`      | $5.0$      | Vertical clearance (in mm) between the bottom of the PCB and the top of the bench base plate.    |
-| **Pogo Pin Diameter**        | `-d`, `--pin-diameter`     | $0.95$     | Diameter (in mm) for the pogo pin holes.                                                         |
-| **Wall Thickness (Side)**    | `--wall-thickness`         | $2.0$      | Thickness (in mm) of the protective side walls surrounding the PCB.                              |
-| **Wall Fillet**              | `--wall-fillet`            | $2.0$      | Fillet radius (in mm) applied to the side wall corners.                                          |
-| **Wall Height**              | `--wall-height`            | $5.0$      | Height (in mm) of the protective side walls.                                                     |
-| **Wall Play**                | `--wall-play`              | $0.4$      | Lateral clearance (in mm) between the PCB perimeter and the walls.                               |
-| **Filler Pin Height**        | `--filler-height`          | $5.0$      | Height (in mm) of the guide pins/columns (Fillers, Blue SVG) protruding through PCB holes.       |
-| **Fixture Screw Hole Dia.**  | `--fixture-screw-hole`     | $2.8$      | Diameter (in mm) for the hole that mounts the fixture clamping mechanism.                        |
-| **Fixture Screw Boss Dia.**  | `--fixture-screw-diameter` | $5.0$      | Outer diameter (in mm) of the boss/standoff feature for the clamping mechanism.                  |
-| **Fixture Screw Z-Offset**   | `--fixture-screw-offset`   | $0.5$      | Z-offset (in mm) of the clamp's contact surface relative to the top surface of the PCB.          |
-| **Fixture Screw Extra Wall** | `--fixture-screw-extra`    | $3.0$      | Extra wall thickness (in mm) added to reinforce the fixture screw boss/standoff.                 |
-| **Support Fillet**           | `--support-fillet`         | $1.0$      | Fillet radius (in mm) applied to the top edges of PCB support features.                          |
-| **Filler Fillet**            | `--filler-fillet`          | $0.5$      | Fillet radius (in mm) applied to the top edges of filler/guide pins.                             |
-| **Extra Fillet Level**       | `--extra-fillet`           | $4$        | Enables or sets the size/iteration of extra, secondary fillets applied to global features.       |
-| **Box Wall Thickness**       | `--box-wall-thickness`     | $2.0$      | Thickness (in mm) of the walls/standoffs used for mounting the entire test bench assembly.       |
-| **Box Screw Diameter**       | `--box-screw-diameter`     | $2.45$     | Diameter (in mm) of the screw holes for mounting the entire test bench assembly.                 |
-| **Box Screw Offset**         | `--box-screw-offset`       | $1.00$     | Depth (in mm) of the counterbore or screw head cavity relative to the top of the mounting plate. |
-| **SVG Scale Factor**         | `-z`, `--scale`            | $0.264583$ | Scaling factor to convert SVG coordinates to working units (mm).                                 |
-| **Mechanical Play**          | `-p`, `--play`             | $0.15$     | Mechanical clearance (tolerance) applied between manufactured parts/features in mm.              |
+| Argument                     | Flag                          | Default    | Description                                                                                      |
+|:-----------------------------|:------------------------------|:-----------|:-------------------------------------------------------------------------------------------------|
+| **SVG Input**                | (Positional)                  | N/A        | Path to the PCB SVG input outline file.                                                          |
+| **Output File**              | (Positional)                  | N/A        | Path to the output file (e.g., `.step` or `.stl`).                                               |
+| **Log Verbosity**            | `-v`, `--verbose`             | 0          | Increases log verbosity for debugging.                                                           |
+| **PCB Thickness**            | `-t`, `--pcb-thickness`       | $1.6$      | Thickness of the PCB in mm.                                                                      |
+| **Base Plate Thickness**     | `-b`, `--bottom`              | $8.0$      | Thickness (in mm) of the main bench base plate.                                                  |
+| **Under PCB Space**          | `-u`, `--under-space`         | $5.0$      | Vertical clearance (in mm) between the bottom of the PCB and the top of the bench base plate.    |
+| **Pogo Pin Diameter**        | `-d`, `--pin-diameter`        | $0.95$     | Diameter (in mm) for the pogo pin holes.                                                         |
+| **Wall Thickness (Side)**    | `--wall-thickness`            | $2.0$      | Thickness (in mm) of the protective side walls surrounding the PCB.                              |
+| **Wall Fillet**              | `--wall-fillet`               | $2.0$      | Fillet radius (in mm) applied to the side wall corners.                                          |
+| **Wall Height**              | `--wall-height`               | $5.0$      | Height (in mm) of the protective side walls.                                                     |
+| **Wall Play**                | `--wall-play`                 | $0.4$      | Lateral clearance (in mm) between the PCB perimeter and the walls.                               |
+| **Filler Pin Height**        | `--filler-height`             | $5.0$      | Height (in mm) of the guide pins/columns (Fillers, Blue SVG) protruding through PCB holes.       |
+| **Fixture Screw Hole Dia.**  | `--fixture-screw-hole`        | $2.8$      | Diameter (in mm) for the hole that mounts the fixture clamping mechanism.                        |
+| **Fixture Screw Boss Dia.**  | `--fixture-screw-diameter`    | $5.0$      | Outer diameter (in mm) of the boss/standoff feature for the clamping mechanism.                  |
+| **Fixture Screw Z-Offset**   | `--fixture-screw-offset`      | $0.5$      | Z-offset (in mm) of the clamp's contact surface relative to the top surface of the PCB.          |
+| **Fixture Screw Extra Wall** | `--fixture-screw-extra`       | $3.0$      | Extra wall thickness (in mm) added to reinforce the fixture screw boss/standoff.                 |
+| **Support Fillet**           | `--support-fillet`            | $1.0$      | Fillet radius (in mm) applied to the top edges of PCB support features.                          |
+| **Filler Fillet**            | `--filler-fillet`             | $0.5$      | Fillet radius (in mm) applied to the top edges of filler/guide pins.                             |
+| **Extra Fillet Level**       | `--extra-fillet`              | $4$        | Enables or sets the size/iteration of extra, secondary fillets applied to global features.       |
+| **Box Wall Thickness**       | `--box-wall-thickness`        | $2.0$      | Thickness (in mm) of the walls/standoffs used for mounting the entire test bench assembly.       |
+| **Box Screw Diameter**       | `--box-screw-diameter`        | $2.45$     | Diameter (in mm) of the screw holes for mounting the entire test bench assembly.                 |
+| **Box Screw Offset**         | `--box-screw-offset`          | $1.00$     | Depth (in mm) of the counterbore or screw head cavity relative to the top of the mounting plate. |
+| **SVG Scale Factor**         | `-z`, `--scale`               | $0.264583$ | Scaling factor to convert SVG coordinates to working units (mm).                                 |
+| **Mechanical Play**          | `-p`, `--play`                | $0.15$     | Mechanical clearance (tolerance) applied between manufactured parts/features in mm.              |
+| **Mirrored**                 | `-m`, `--mirrored`            | False      | If set, mirrors the SVG geometry along the X-axis (top-bottom flip).                             |
 
 ### Example
-python bench.py -vvvvvv --support-fillet 0.8 -z 1 -t 1.0 my_test_jig.svg jig_assembly.step
+python bench.py -vvvvvv -m --support-fillet 0.8 -z 1 -t 1.0 jig.svg jig.step
 
 ***
 

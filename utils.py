@@ -120,7 +120,7 @@ def circle_path(x, y, r=0):
     return svgpathtools.parser.parse_path(path_d)
 
 
-def center_rescale(ref, paths, scale=1.0):
+def center_rescale(ref, paths, scale=1.0, mirror_x=False, mirror_y=False):
     """
     Centers a list of paths relative to the bounding box of a reference path,
     then scales them by a given factor.
@@ -148,6 +148,16 @@ def center_rescale(ref, paths, scale=1.0):
 
     # 3. Scale the centered paths by the given factor.
     paths = [p.scaled(scale) for p in paths]
+
+    if mirror_x:
+        x_mirror_matrix = np.identity(3)
+        x_mirror_matrix[0, 0] = -1
+        paths = [svgpathtools.path.transform(p, x_mirror_matrix) for p in paths]
+
+    if mirror_y:
+        y_mirror_matrix = np.identity(3)
+        y_mirror_matrix[1, 1] = -1
+        paths = [svgpathtools.path.transform(p, y_mirror_matrix) for p in paths]
 
     return paths
 
@@ -273,7 +283,7 @@ def is_path_clockwise(path):
     return acc < 0
 
 
-def close_path_sanitizing(path, clockwise=False):
+def closed_path_sanitizing(path, clockwise=False, decimals=4):
     """
     Sanitizes, reorders, closes, and standardizes the winding direction
     of a list of svgpathtools segments intended to form a closed path.
@@ -290,6 +300,13 @@ def close_path_sanitizing(path, clockwise=False):
     Raises:
         Exception: If segments cannot be ordered to form a closed loop.
     """
+    def round(value):
+        return np.round(value, decimals=decimals)
+
+    def isclose(a, b):
+        required_atol = 10 ** (-decimals)
+        return np.isclose(a, b, atol=required_atol, rtol=0)
+
     # 1. INITIALIZATION and COPY
     # Create a new svgpathtools.Path object from the input segments.
     path = svgpathtools.Path(*path)
@@ -297,7 +314,7 @@ def close_path_sanitizing(path, clockwise=False):
     # 2. SANITIZATION: Remove Zero-Length Segments
     # Filter out segments where the distance between start and end points is effectively zero.
     path = svgpathtools.Path(*list(filter(
-        lambda p: not np.isclose(np.linalg.norm(p.end - p.start), 0), path
+        lambda p: not isclose(np.linalg.norm(p.end - p.start), 0), path
     )))
 
     # 3. SANITIZATION: Replace Degenerate Cubic Bezier Curves
@@ -326,14 +343,14 @@ def close_path_sanitizing(path, clockwise=False):
         for j in range(i + 1, len(path)):
 
             # Case 1: Direct connection found (path[i].end == path[j].start)
-            if np.isclose(path[i].end, path[j].start):
+            if isclose(path[i].end, path[j].start):
                 if j != i + 1:
                     path[i + 1], path[j] = path[j], path[i + 1]  # Swap into place
                 found = True
                 break
 
             # Case 2: Reversed connection found (path[i].end == path[j].end)
-            if np.isclose(path[i].end, path[j].end):
+            if isclose(path[i].end, path[j].end):
                 path[j] = path[j].reversed()  # Reverse the segment
                 if j != i + 1:
                     path[i + 1], path[j] = path[j], path[i + 1]  # Swap into place
@@ -344,7 +361,7 @@ def close_path_sanitizing(path, clockwise=False):
             raise Exception("Can't close path: No segment found to follow index %d" % i)
 
         # Coalesce endpoints to fix floating-point gaps
-        path[i].end = path[i + 1].start = (path[i].end + path[i + 1].start) / 2
+        path[i].end = path[i + 1].start = round((path[i].end + path[i + 1].start) / 2)
 
     path.closed = True
     path = svgpathtools.Path(*path)

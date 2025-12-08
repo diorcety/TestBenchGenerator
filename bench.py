@@ -247,24 +247,22 @@ def create_wall(body_o, pcb_outline, fingers, args):
         fingers: List of paths indicating where the wall should be cut
         args: Parameters for wall height, thickness, play, and fillets
     """
+
     # 1. Define inner and outer boundaries based on wall thickness and play
     inner_outline = offset_curve(pcb_outline[0], args.wall_play)
     outer_outline = offset_curve(pcb_outline[0], args.wall_play + args.wall_thickness)
 
     # 2. Extrude boundaries to create the wall base shape
     wall_height_total = args.under_space + args.pcb_thickness + args.wall_height
-    wall_outer_o = to_wire(outer_outline, body_o).extrude(wall_height_total, False)
-    wall_inner_o = to_wire(inner_outline, body_o).extrude(wall_height_total, False)
+    wall_o = to_wire(outer_outline, body_o).extrude(wall_height_total, False)
+    wall_o = to_wire(inner_outline, wall_o).extrude(wall_height_total, "cut")
 
-    # 3. Hollow out the wall
-    wall_o = wall_outer_o.cut(wall_inner_o)
-
-    # 4. Process cutouts (fingers) along the wall
+    # 3. Process cutouts (fingers) along the wall
     for _, segment in filter(lambda x: x[0], get_segments(pcb_outline, [(True, finger) for finger in fingers])):
         # Create a closed path loop to subtract material for connector access
-        cut_outline_1 = offset_curve(pcb_outline[0].cropped(segment[0], segment[1]),
-                                     args.wall_play + args.wall_thickness * 2)
-        cut_outline_2 = pcb_outline[0].cropped(segment[0], segment[1]).reversed()
+        path_segment = pcb_outline[0].cropped(segment[0], segment[1])
+        cut_outline_1 = offset_curve(path_segment, args.wall_play + args.wall_thickness * 2)
+        cut_outline_2 = path_segment.reversed()
 
         # Combine segments into a manifold path for extrusion
         cut_outline = svgpathtools.Path(
@@ -273,20 +271,18 @@ def create_wall(body_o, pcb_outline, fingers, args):
         )
 
         # Create the subtractive solid for the finger cutout
-        cut_o = to_wire(cut_outline, body_o).extrude(wall_height_total * 2, False)
-        wall_o = wall_o.cut(cut_o)
+        wall_o = to_wire(cut_outline, wall_o).extrude(wall_height_total * 2, "cut")
 
-    # 5. Tag base edges for later filleting and combine with main body
+    # 4. Tag base edges for later filleting and combine with main body
     wall_o.edges("<Z").tag("wall_base")
     body_o = body_o.union(wall_o)
 
-    # 6. Apply optional fillets to top and base edges
+    # 5. Apply optional fillets to top and base edges
     if args.extra_fillet > 3:
         # Base fillet for structural strength
         body_o = body_o.edges(tag="wall_base").fillet(args.wall_fillet)
         # Top fillet for handling comfort
         body_o = body_o.edges(">Z").fillet(args.wall_thickness / 3)
-
     return body_o
 
 
@@ -403,10 +399,10 @@ def generate(args):
     pcb_outline = list(filter(ShapeTypes.Outline, elements))[0]
 
     # Rescale all geometry based on the board outline reference
-    paths = center_rescale(pcb_outline, paths, args.scale)
+    paths = center_rescale(pcb_outline, paths, args.scale, mirror_y=not args.mirrored)
     elements = list(zip(paths, attributes))
     pcb_outline = list(filter(ShapeTypes.Outline, elements))[0]
-    pcb_outline = (close_path_sanitizing(pcb_outline[0]), pcb_outline[1])
+    pcb_outline = (closed_path_sanitizing(pcb_outline[0]), pcb_outline[1])
 
     # 2. Initialize the base solid (Mounting Plate)
     body_o = cq.Workplane("front")
@@ -424,7 +420,7 @@ def generate(args):
     supports = list(filter(ShapeTypes.Support, elements))
     for support in supports:
         body_o.plane = plane
-        path = close_path_sanitizing(support[0])
+        path = closed_path_sanitizing(support[0])
         body_o = create_column(body_o, path, args.under_space,
                                args.support_fillet if args.extra_fillet > 2 else 0)
 
@@ -432,7 +428,7 @@ def generate(args):
     fillers = list(filter(ShapeTypes.Filler, elements))
     for filler in fillers:
         body_o.plane = plane
-        path = close_path_sanitizing(filler[0])
+        path = closed_path_sanitizing(filler[0])
         path = offset_curve(path, -args.play)
         body_o = create_column(body_o, path,
                                args.under_space + args.pcb_thickness + args.filler_height,
@@ -448,7 +444,7 @@ def generate(args):
                 .circle(args.pin_diameter / 2) \
                 .extrude(args.bottom, "cut", both=True)
         else:  # Handle complex cutout paths
-            path = close_path_sanitizing(hole[0])
+            path = closed_path_sanitizing(hole[0])
             body_o = to_wire(path, body_o).extrude(args.bottom, "cut", both=True)
 
     # 7. Generate Screw Mounts (Additive Boss + Subtractive Hole)
@@ -538,6 +534,8 @@ def _main(argv=sys.argv):
                         help="Scaling factor to convert SVG coordinates to working units (mm).")
     parser.add_argument('-p', '--play', default=0.15, type=float,
                         help="Mechanical clearance (tolerance) applied between manufactured parts/features in mm.")
+    parser.add_argument('-m', '--mirrored', default=False, action='store_true',
+                        help="If set, mirrors the SVG geometry along the X-axis (top-bottom flip).")
 
     # File Arguments
     parser.add_argument('svg',

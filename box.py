@@ -217,7 +217,7 @@ def get_outline_segments(args):
         outline = list(filter(ShapeTypes.Outline, elements))[0]
 
     # 3. Sanitize geometry
-    outline = (close_path_sanitizing(outline[0]), outline[1])
+    outline = (closed_path_sanitizing(outline[0]), outline[1])
 
     # 4. Filter for Anchor and Clip zones to perform segmentation
     interest_types = [ShapeTypes.Anchor, ShapeTypes.Clip]
