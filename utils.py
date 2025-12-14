@@ -181,7 +181,8 @@ def center_rescale(ref, paths, scale=1.0, mirror_x=False, mirror_y=False):
     paths = [p.translated(-tuple_to_euclid((center_x, center_y))) for p in paths]
 
     # 3. Scale the centered paths by the given factor.
-    paths = [p.scaled(scale) for p in paths]
+    if scale != 1.0:
+        paths = [p.scaled(scale) for p in paths]
 
     if mirror_x:
         x_mirror_matrix = np.identity(3)

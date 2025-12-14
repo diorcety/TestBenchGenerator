@@ -211,10 +211,9 @@ def get_outline_segments(args):
     outline = list(filter(ShapeTypes.Outline, elements))[0]
 
     # 2. Apply scaling
-    if args.scale != 1.0:
-        paths = center_rescale(outline, paths, args.scale)
-        elements = list(zip(paths, attributes))
-        outline = list(filter(ShapeTypes.Outline, elements))[0]
+    paths = center_rescale(outline, paths, args.scale)
+    elements = list(zip(paths, attributes))
+    outline = list(filter(ShapeTypes.Outline, elements))[0]
 
     # 3. Sanitize geometry
     outline = (closed_path_sanitizing(outline[0]), outline[1])
