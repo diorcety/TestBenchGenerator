@@ -394,7 +394,7 @@ def generate(args):
         args: Namespace containing file paths and design dimensions.
     """
     # 1. Load SVG and normalize scale/alignment
-    paths, attributes = svgpathtools.svg2paths(args.svg)
+    paths, attributes = svg2paths(args.svg)
     elements = list(zip(paths, attributes))
     pcb_outline = list(filter(ShapeTypes.Outline, elements))[0]
 

@@ -76,6 +76,40 @@ svgpathtools.Arc.point = my_custom_arc_point
 # END PATCH
 # =========================================================================
 
+
+def svg2paths(path):
+    """
+    Convert SVG paths to path objects and their attributes, mimicking svgpathtools.svg2paths behavior
+    but applying transformations to the path geometry.
+
+    Args:
+        path: Path to SVG file or SVG string content
+
+    Returns:
+        Tuple of (path_objects, attributes) where:
+        - path_objects: List of path objects with applied transformations
+        - attributes: List of dictionaries containing element attributes
+
+    """
+    from svgpathtools.document import Document
+
+    doc = Document(path)
+
+    def dom2dict(element):
+        """Converts DOM elements to dictionaries of attributes."""
+        keys = list(element.attrib.keys())
+        values = [val for val in list(element.attrib.values())]
+        return dict(list(zip(keys, values)))
+
+    # Extract paths(with transformations applied to path geometry) and their attributes
+    path_data = [(x, dom2dict(x.element)) for x in doc.paths()]
+
+    # Separate paths and attributes
+    paths, attrs = zip(*path_data) if path_data else ([], [])
+
+    return paths, attrs
+
+
 def bbox2path(xmin, xmax, ymin, ymax, r=0):
     """
     Converts bounding box coordinates into an svgpathtools path object.
@@ -300,6 +334,7 @@ def closed_path_sanitizing(path, clockwise=False, decimals=4):
     Raises:
         Exception: If segments cannot be ordered to form a closed loop.
     """
+
     def round(value):
         return np.round(value, decimals=decimals)
 

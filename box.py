@@ -206,7 +206,7 @@ def get_outline_segments(args):
     """
 
     # 1. Load paths and identify the initial outline.
-    paths, attributes = svgpathtools.svg2paths(args.svg)
+    paths, attributes = svg2paths(args.svg)
     elements = list(zip(paths, attributes))
     outline = list(filter(ShapeTypes.Outline, elements))[0]
 
