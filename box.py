@@ -113,16 +113,7 @@ def generate_profiles(args):
 
         return path
 
-    # 4. W-PROFILE (Full Wall)
-    w_pts = [
-        (args.wall_offset, height / 2),
-        (args.wall_offset + width, height / 2),
-        (args.wall_offset + width, -height / 2),
-        (args.wall_offset, -height / 2),
-    ]
-    w_path = points_to_path(w_pts)
-
-    # 5. Z-PROFILE (Interlocking Step)
+    # 4. Z-PROFILE (Interlocking Step)
     z_pts = [
         (args.wall_offset, height / 2 - args.wall_extra - offset),
         (args.wall_offset + width - args.wall_thickness - offset, height / 2 - args.wall_extra - offset),
@@ -139,7 +130,7 @@ def generate_profiles(args):
         get_block(width, height, z_path, args.wall_offset, -args.play / 2)
     ]
 
-    # 6. S-PROFILE (Simple Notch)
+    # 5. S-PROFILE (Simple Notch)
     s_pts = [
         (args.wall_offset, height / 2 - args.wall_extra - offset),
         (args.wall_offset + width - args.wall_thickness - offset, height / 2 - args.wall_extra - offset),
@@ -154,7 +145,7 @@ def generate_profiles(args):
         get_block(width, height, s_path, args.wall_offset, -args.play / 2)
     ]
 
-    # 7. C-PROFILE (Chamfered Edge)
+    # 6. C-PROFILE (Chamfered Edge)
     c_pts = [
         (args.wall_offset, height / 2 - args.wall_extra - offset),
         (args.wall_offset + width - args.wall_thickness - offset, height / 2 - args.wall_extra - offset),
@@ -170,7 +161,7 @@ def generate_profiles(args):
         get_block(width, height, c_path, args.wall_offset, -args.play / 2)
     ]
 
-    # 8. T-PROFILE (Triangle support)
+    # 7. T-PROFILE (Triangle support)
     if pcb_support_width > 0:
         t_pts = [
             (-args.pcb_cover_offset, 0.0),
@@ -181,7 +172,7 @@ def generate_profiles(args):
     else:
         t_path = None
 
-    # 9. P-PROFILE (PCB slot)
+    # 8. P-PROFILE (PCB slot)
     if pcb_clearance_width > 0:
         p_pts = [
             (args.wall_offset, args.pcb_thickness / 2 + args.pcb_z),
@@ -193,7 +184,7 @@ def generate_profiles(args):
     else:
         p_path = None
 
-    return w_path, z_paths, s_paths, c_paths, t_path, p_path
+    return z_paths, s_paths, c_paths, t_path, p_path
 
 
 def get_outline_segments(args):
@@ -268,17 +259,26 @@ def get_plane(path, position=0, flipped=False):
     return wp
 
 
-def generate_pcb(profile, outline):
+def generate_pcb(profile, outline, pcb_clearance_offset, pcb_thickness, pcb_z):
     path = outline[0]
 
+    # 1. Add clearance to the outline
+    path = offset_curve(path, pcb_clearance_offset)
+
+    # 2. Extrude the outline to create 3D PCB geometry
+    outline_wire = to_wire(path, closed=True)
+    return outline_wire.extrude(pcb_thickness, combine=False).translate((0, 0, -pcb_thickness / 2 + pcb_z))
+
+    """
     # 1. Create a 3D wire from the path and position the profile
     # on the normal plane at the start of the sweep path.
-    outline_wire = to_wire(path, closed=False)
+    outline_wire = to_wire(path, closed=True)
     profile_path = to_wire(profile, get_plane(path))
 
     # 2. Generate the PCB geometry by sweeping the profile along the wire.
     # Uses Frenet frame and transformed transition for accurate orientation.
     return profile_path.sweep(outline_wire, isFrenet=True, transition="transformed", combine=False)
+    """
 
 
 def generate_pcb_support(profile, outline, pcb_thickness, shift, upper):
@@ -383,7 +383,7 @@ def generate(args):
     outline, segments = get_outline_segments(args)
 
     # 2. Generate required 2D cross-sectional profiles (inner/outer variations).
-    w_path, z_paths, s_paths, c_paths, t_path, p_path = generate_profiles(args)
+    z_paths, s_paths, c_paths, t_path, p_path = generate_profiles(args)
 
     # 3. Generate the INNER 3D wall structure using index [0] profiles.
     inner = generate_wall((z_paths[0], s_paths[0], c_paths[0]), outline, segments, args.play,
@@ -399,7 +399,7 @@ def generate(args):
     if not args.disable_pcb:
         # Subtract the main PCB profile from both wall structures.
         if p_path is not None:
-            pcb = generate_pcb(p_path, outline)
+            pcb = generate_pcb(p_path, outline, args.pcb_clearance_offset, args.pcb_thickness, args.pcb_z)
             outer = outer.cut(pcb)
             inner = inner.cut(pcb)
 
